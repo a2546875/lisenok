@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lisenok-db
+    environment:
+      POSTGRES_USER: lisenok
+      POSTGRES_PASSWORD: lisenok
+      POSTGRES_DB: lisenok_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - lisenok_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lisenok -d lisenok_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lisenok_pg:
