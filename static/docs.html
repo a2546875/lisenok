@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документация | Лисёнок</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="/assets/css/site.css?v=2608262" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { brand: { green: '#4A5D4E', hover: '#3A4A3D', light: '#E2E8F0' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans antialiased min-h-screen">
+    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-10 pb-20">
+        <p class="text-xs uppercase tracking-wider opacity-60 mb-2">Файлы</p>
+        <h1 data-content="docs_title" class="text-3xl md:text-4xl font-semibold mb-4">Документация</h1>
+        <p data-content="docs_lead" class="text-sm opacity-70 mb-10 max-w-2xl">Сертификаты и документы мастерской. Нажмите, чтобы открыть крупнее.</p>
+        <div id="docs-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+    </main>
+    <script src="/assets/js/app.js?v=2608262"></script>
+    <script>
+        async function loadDocs() {
+            const grid = document.getElementById("docs-grid");
+            try {
+                const docs = await fetch("/api/documents").then((r) => r.json());
+                if (!docs.length) {
+                    grid.innerHTML = '<p class="text-sm opacity-70">Документы появятся здесь после загрузки в админке.</p>';
+                    return;
+                }
+                grid.innerHTML = docs.map((doc) => {
+                    const preview = doc.kind === "pdf"
+                        ? `<div class="photo-frame flex items-center justify-center text-sm">PDF</div>`
+                        : `<img src="${doc.file_url}" alt="${doc.title}" class="photo-frame">`;
+                    return `
+                        <button type="button" class="js-doc text-left glass-card rounded-2xl p-4" data-src="${doc.file_url}" data-kind="${doc.kind}">
+                            ${preview}
+                            <h2 class="mt-3 font-medium">${doc.title}</h2>
+                            <p class="text-xs opacity-60 mt-1">Нажмите, чтобы увеличить</p>
+                        </button>`;
+                }).join("");
+            } catch (error) {
+                grid.innerHTML = '<p class="text-sm opacity-70">Не удалось загрузить документы.</p>';
+            }
+        }
+        boot("docs");
+        loadDocs();
+    </script>
+</body>
+</html>

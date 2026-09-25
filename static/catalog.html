@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог | Лисёнок</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="/assets/css/site.css?v=2608262" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { brand: { green: '#4A5D4E', hover: '#3A4A3D', light: '#E2E8F0' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans antialiased min-h-screen">
+    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-10 pb-20">
+        <div class="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center mb-8">
+            <div>
+                <p class="text-xs uppercase tracking-wider opacity-60 mb-2">Витрина</p>
+                <h1 data-content="catalog_title" class="text-3xl md:text-4xl font-semibold tracking-wider">Каталог</h1>
+            </div>
+            <div class="flex items-center gap-4 text-sm font-medium">
+                <span>Способ покупки</span>
+                <div class="relative inline-block w-12 align-middle select-none">
+                    <input type="checkbox" name="toggle" id="mode-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-gray-600 appearance-none cursor-pointer top-0 left-0 z-10"/>
+                    <label for="mode-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                </div>
+                <span id="mode-label" class="opacity-80">Розница</span>
+            </div>
+        </div>
+        <p data-content="catalog_lead" class="text-sm opacity-70 mb-8">Розница — одна позиция. Опт: своя цена и заказ от 100 штук.</p>
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        <p id="catalog-status" class="mt-6 text-sm opacity-60"></p>
+    </main>
+    <script src="/assets/js/app.js?v=2608262"></script>
+    <script>boot("catalog");</script>
+</body>
+</html>

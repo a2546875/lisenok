@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка | Лисёнок</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="/assets/css/site.css?v=2608262" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { brand: { green: '#4A5D4E', hover: '#3A4A3D', light: '#E2E8F0' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans antialiased min-h-screen">
+    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-6 pb-20">
+        <p class="text-xs uppercase tracking-wider opacity-60 mb-2">Панель</p>
+        <h1 class="text-3xl font-semibold mb-8">Админка</h1>
+        <div id="gate" class="hidden text-sm opacity-80"></div>
+        <div id="panel" class="hidden space-y-14">
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><p class="text-xs uppercase opacity-60 mb-1">Посещения</p><p id="stat-views" class="text-4xl font-semibold">0</p></div>
+                <div><p class="text-xs uppercase opacity-60 mb-1">Уникальные</p><p id="stat-unique" class="text-4xl font-semibold">0</p></div>
+                <div><p class="text-xs uppercase opacity-60 mb-1">Авторизации</p><p id="stat-logins" class="text-4xl font-semibold">0</p></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Тексты страниц</h2>
+                <form id="texts-form" class="space-y-3"></form>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Фон сайта и галерея</h2>
+                <form id="bg-form" class="flex flex-wrap gap-3 items-center mb-4">
+                    <span class="text-sm opacity-80">Новый фон:</span>
+                    <input type="file" name="file" accept="image/*" required class="text-sm">
+                    <button class="px-4 py-2 bg-brand-green rounded-lg text-sm">Заменить фон</button>
+                </form>
+                <form id="gallery-form" class="flex flex-wrap gap-3 items-center mb-6">
+                    <select name="kind" class="bg-black/30 border border-white/20 rounded-lg p-2 text-sm">
+                        <option value="workshop">Фото мастерской</option>
+                        <option value="product">Готовое изделие</option>
+                    </select>
+                    <input type="file" name="file" accept="image/*" required class="text-sm">
+                    <button class="px-4 py-2 bg-brand-green rounded-lg text-sm">Добавить фото</button>
+                </form>
+                <div id="gallery" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Документация</h2>
+                <form id="doc-form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <input name="title" required placeholder="Название документа" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input type="file" name="file" accept="image/*,.pdf,application/pdf" required class="text-sm">
+                    <button class="py-3 bg-brand-green rounded-lg text-sm">Загрузить</button>
+                </form>
+                <div id="docs" class="space-y-3 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">QR-коды</h2>
+                <form id="qr-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <input name="title" required placeholder="Название, например Telegram" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input name="url" required placeholder="https://..." class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input type="file" name="file" accept="image/*" class="text-sm">
+                    <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить QR</button>
+                </form>
+                <div id="qrs" class="space-y-2 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Товары</h2>
+                <form id="product-form" class="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6">
+                    <input name="name" required placeholder="Название" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input name="description" placeholder="Описание" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input name="retail_price" type="number" min="0" placeholder="Розница" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input name="wholesale_price" type="number" min="0" placeholder="Опт от 100" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input type="file" name="file" accept="image/*" class="text-sm">
+                    <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить</button>
+                </form>
+                <div id="products" class="space-y-4 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Пользователи</h2>
+                <div id="users" class="space-y-2 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Техподдержка</h2>
+                <div id="tickets" class="space-y-5 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Конструктор</h2>
+                <form id="option-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <select name="category" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                        <option value="set_type">Состав набора</option>
+                        <option value="color">Цвет набора</option>
+                        <option value="pattern">Узор / эскиз</option>
+                    </select>
+                    <input name="name" required placeholder="Название опции" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input type="file" name="file" accept="image/*" class="text-sm">
+                    <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить</button>
+                </form>
+                <div id="options" class="space-y-2 text-sm"></div>
+            </section>
+        </div>
+    </main>
+    <script src="/assets/js/app.js?v=2608262"></script>
+    <script>
+        const CATEGORY = { set_type: "Состав", color: "Цвет", pattern: "Узор" };
+
+        async function adminGet(url) {
+            const response = await fetch(url, { headers: authHeaders() });
+            const data = await response.json();
+            if (!response.ok) throw new Error("fail");
+            return data;
+        }
+
+        async function loadAdmin() {
+            if (!session?.is_admin) {
+                document.getElementById("gate").classList.remove("hidden");
+                document.getElementById("gate").textContent = "Войдите почтой администратора.";
+                return;
+            }
+            document.getElementById("panel").classList.remove("hidden");
+            try {
+                const [stats, texts, products, options, qrs, gallery, users, tickets, docs] = await Promise.all([
+                    adminGet("/api/admin/stats"),
+                    adminGet("/api/admin/texts"),
+                    adminGet("/api/admin/products"),
+                    adminGet("/api/admin/options"),
+                    adminGet("/api/admin/qrs"),
+                    adminGet("/api/admin/gallery"),
+                    adminGet("/api/admin/users"),
+                    adminGet("/api/support/tickets"),
+                    adminGet("/api/admin/documents")
+                ]);
+                document.getElementById("stat-views").textContent = stats.page_views;
+                document.getElementById("stat-unique").textContent = stats.unique_visitors;
+                document.getElementById("stat-logins").textContent = stats.logins;
+                document.getElementById("texts-form").innerHTML = texts.map((t) => `
+                    <label class="block text-sm">
+                        <span class="opacity-70">${t.page} · ${t.label}</span>
+                        <textarea name="${t.key}" class="mt-1 w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm min-h-16">${t.value || ""}</textarea>
+                    </label>
+                `).join("") + '<button class="px-6 py-3 bg-brand-green rounded-lg text-sm font-medium">Сохранить тексты</button>';
+                document.getElementById("products").innerHTML = products.map((p) => `
+                    <div class="flex flex-col md:flex-row gap-4 border-b border-white/10 pb-4">
+                        ${p.image_url ? `<img src="${p.image_url}" alt="${p.name}" class="admin-thumb js-zoom">` : '<div class="admin-thumb flex items-center justify-center text-xs opacity-50">Нет фото</div>'}
+                        <form class="product-edit grid grid-cols-1 md:grid-cols-5 gap-2 items-center flex-1" data-id="${p.id}">
+                            <input name="name" value="${p.name || ""}" class="bg-black/30 border border-white/20 rounded-lg p-2">
+                            <input name="description" value="${p.description || ""}" class="bg-black/30 border border-white/20 rounded-lg p-2">
+                            <input name="retail_price" type="number" value="${p.retail_price || 0}" class="bg-black/30 border border-white/20 rounded-lg p-2">
+                            <input name="wholesale_price" type="number" value="${p.wholesale_price || 0}" class="bg-black/30 border border-white/20 rounded-lg p-2">
+                            <div class="space-y-2">
+                                <input type="file" name="file" accept="image/*">
+                                <div>
+                                    <button class="mr-2">Сохранить</button>
+                                    <button type="button" onclick="removeProduct(${p.id})">Удалить</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                `).join("") || "<p class='opacity-70'>Товаров нет</p>";
+                document.getElementById("qrs").innerHTML = qrs.map((q) => `
+                    <div class="flex justify-between gap-3 border-b border-white/10 pb-2">
+                        <span>${q.title} — ${q.url}</span>
+                        <button onclick="removeQr(${q.id})">Удалить</button>
+                    </div>
+                `).join("") || "<p class='opacity-70'>QR нет</p>";
+                document.getElementById("docs").innerHTML = docs.map((d) => `
+                    <div class="flex justify-between gap-3 items-center border-b border-white/10 pb-2">
+                        <button type="button" class="js-doc text-left" data-src="${d.file_url}" data-kind="${d.kind}">${d.title} · открыть</button>
+                        <button onclick="removeDoc(${d.id})">Удалить</button>
+                    </div>
+                `).join("") || "<p class='opacity-70'>Документов нет</p>";
+                document.getElementById("gallery").innerHTML = gallery.map((g) => `
+                    <div>
+                        <img src="${g.image_url}" class="photo-frame mb-2 js-zoom">
+                        <p class="text-xs opacity-70 mb-1">${g.kind}</p>
+                        ${g.kind === "background" ? "" : `<button onclick="removeGallery(${g.id})" class="text-xs">Удалить</button>`}
+                    </div>
+                `).join("");
+                document.getElementById("users").innerHTML = users.map((u) =>
+                    `<p>${u.email} ${u.is_admin ? "· админ" : ""}</p>`
+                ).join("") || "<p class='opacity-70'>Пока никого</p>";
+                document.getElementById("tickets").innerHTML = tickets.map((t) => `
+                    <div class="border-b border-white/10 pb-3">
+                        <p class="font-medium">${t.subject} · ${t.user_email}</p>
+                        ${(t.messages || []).map((m) => `<p class="opacity-80">${m.is_admin ? "Админ" : "Пользователь"}: ${m.text}</p>`).join("")}
+                        <form class="admin-reply flex gap-2 mt-2" data-id="${t.id}">
+                            <input name="text" required placeholder="Ответ" class="flex-1 bg-black/30 border border-white/20 rounded-lg p-2">
+                            <button class="px-3 py-2 bg-brand-green rounded-lg">Ответить</button>
+                        </form>
+                    </div>
+                `).join("") || "<p class='opacity-70'>Обращений нет</p>";
+                document.getElementById("options").innerHTML = options.map((o) => `
+                    <div class="flex flex-col md:flex-row gap-3 items-center border-b border-white/10 pb-3">
+                        ${o.image_url ? `<img src="${o.image_url}" alt="${o.name}" class="admin-thumb js-zoom">` : '<div class="admin-thumb flex items-center justify-center text-xs opacity-50">Нет фото</div>'}
+                        <span class="flex-1">${CATEGORY[o.category]} — ${o.name}</span>
+                        <form class="option-photo flex items-center gap-2" data-id="${o.id}">
+                            <input type="file" name="file" accept="image/*" required class="text-sm">
+                            <button class="px-3 py-2 bg-brand-green rounded-lg">Фото</button>
+                        </form>
+                        <button onclick="removeOption(${o.id})">Удалить</button>
+                    </div>
+                `).join("");
+                bindAdminForms();
+            } catch (error) {
+                document.getElementById("gate").classList.remove("hidden");
+                document.getElementById("gate").textContent = "Не удалось загрузить админку. Выйдите и войдите снова.";
+            }
+        }
+
+        function bindAdminForms() {
+            document.getElementById("texts-form").onsubmit = async (event) => {
+                event.preventDefault();
+                const items = [...event.target.querySelectorAll("textarea")].map((el) => ({ key: el.name, value: el.value }));
+                await fetch("/api/admin/texts", { method: "POST", headers: authHeaders(), body: JSON.stringify(items) });
+                loadAdmin();
+            };
+            document.querySelectorAll(".product-edit").forEach((form) => {
+                form.onsubmit = async (event) => {
+                    event.preventDefault();
+                    const data = new FormData(form);
+                    await fetch(`/api/admin/products/${form.dataset.id}`, {
+                        method: "PUT",
+                        headers: authHeaders(),
+                        body: JSON.stringify({
+                            name: data.get("name"),
+                            description: data.get("description"),
+                            retail_price: Number(data.get("retail_price") || 0),
+                            wholesale_price: Number(data.get("wholesale_price") || 0)
+                        })
+                    });
+                    if (data.get("file") && data.get("file").size) {
+                        const photo = new FormData();
+                        photo.append("file", data.get("file"));
+                        await fetch(`/api/admin/products/${form.dataset.id}/photo`, { method: "POST", headers: authHeaders(false), body: photo });
+                    }
+                    loadAdmin();
+                };
+            });
+            document.querySelectorAll(".option-photo").forEach((form) => {
+                form.onsubmit = async (event) => {
+                    event.preventDefault();
+                    await fetch(`/api/admin/options/${form.dataset.id}/photo`, {
+                        method: "POST",
+                        headers: authHeaders(false),
+                        body: new FormData(form)
+                    });
+                    loadAdmin();
+                };
+            });
+            document.querySelectorAll(".admin-reply").forEach((form) => {
+                form.onsubmit = async (event) => {
+                    event.preventDefault();
+                    await fetch(`/api/support/tickets/${form.dataset.id}/messages`, {
+                        method: "POST",
+                        headers: authHeaders(),
+                        body: JSON.stringify({ text: new FormData(form).get("text") })
+                    });
+                    loadAdmin();
+                };
+            });
+        }
+
+        async function removeProduct(id) { await fetch(`/api/admin/products/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function removeOption(id) { await fetch(`/api/admin/options/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function removeQr(id) { await fetch(`/api/admin/qrs/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function removeGallery(id) { await fetch(`/api/admin/gallery/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function removeDoc(id) { await fetch(`/api/admin/documents/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+
+        document.getElementById("product-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const data = new FormData(event.target);
+            const created = await fetch("/api/admin/products", {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    name: data.get("name"),
+                    description: data.get("description"),
+                    retail_price: Number(data.get("retail_price") || 0),
+                    wholesale_price: Number(data.get("wholesale_price") || 0)
+                })
+            }).then((r) => r.json());
+            if (created.id && data.get("file") && data.get("file").size) {
+                const photo = new FormData();
+                photo.append("file", data.get("file"));
+                await fetch(`/api/admin/products/${created.id}/photo`, { method: "POST", headers: authHeaders(false), body: photo });
+            }
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("qr-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            await fetch("/api/admin/qrs", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("bg-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const data = new FormData(event.target);
+            data.append("kind", "background");
+            await fetch("/api/admin/gallery", { method: "POST", headers: authHeaders(false), body: data });
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("gallery-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            await fetch("/api/admin/gallery", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("option-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            await fetch("/api/admin/options", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("doc-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            await fetch("/api/admin/documents", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
+            event.target.reset();
+            loadAdmin();
+        });
+
+        boot("admin");
+        loadAdmin();
+    </script>
+</body>
+</html>

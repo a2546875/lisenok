@@ -68,9 +68,9 @@ DATABASE_URL=postgresql://lisenok:password@localhost:5432/lisenok_db
 docker compose up -d db
 ```
 
-## Фон леса
+## Фон сайта
 
-Положите файл `static/forest-bg.mp4` — живое видео включится само. Пока файла нет, работает статичный лесной фон.
+Фон — фото лиса в тумане: `static/forest-bg.png`. Чтобы заменить картинку, положите новый файл с тем же именем.
 
 ## Когда появится VDS
 

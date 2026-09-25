@@ -1,0 +1,15 @@
+[Unit]
+Description=Lisenok Streamlit admin
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/lisenok
+Environment=PATH=/opt/lisenok/.venv/bin
+ExecStart=/opt/lisenok/.venv/bin/streamlit run admin.py --server.port 8501 --server.address 127.0.0.1 --server.baseUrlPath admin --server.headless true --browser.gatherUsageStats false
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

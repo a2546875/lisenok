@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     cors_origins: str = "*"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    admin_email: str = "admin@lisenok.ru"
+    admin_password: str = ""
+    secret_key: str = "lisenok-dev-secret"
 
 
 settings = Settings()

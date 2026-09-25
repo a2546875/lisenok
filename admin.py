@@ -28,7 +28,7 @@ def db_session():
 
 
 st.set_page_config(page_title="Админка Лисёнок", layout="wide")
-st.title("🦊 Панель управления: Лисёнок")
+st.title("Панель управления: Лисёнок")
 
 tab1, tab2, tab3 = st.tabs(["🛍️ Управление каталогом", "🎨 Настройки конструктора", "✉️ Заявки"])
 
@@ -82,7 +82,8 @@ with tab1:
                     st.rerun()
 
 with tab2:
-    st.header("Опции 3D-конструктора")
+    st.header("Опции конструктора")
+    st.caption("Покупатель меняет состав набора и цвет. Форма изделия не меняется. Узоры и эскизы наносятся только из списка ниже.")
     with st.form("new_option_form", clear_on_submit=True):
         category = st.selectbox(
             "Категория",

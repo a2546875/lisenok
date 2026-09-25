@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контакты | Лисёнок</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="/assets/css/site.css?v=2608262" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { brand: { green: '#4A5D4E', hover: '#3A4A3D', light: '#E2E8F0' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans antialiased min-h-screen">
+    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-10 pb-20">
+        <p class="text-xs uppercase tracking-wider opacity-60 mb-2">Связь</p>
+        <h1 data-content="contacts_title" class="text-3xl md:text-4xl font-semibold mb-4">Контакты</h1>
+        <p data-content="contacts_lead" class="text-sm opacity-70 mb-8">Предзаказ и сотрудничество</p>
+        <a id="contacts-phone" href="tel:+79991234567" class="text-3xl font-medium block mb-4 hover:text-brand-light">+7 (999) 123-45-67</a>
+        <p class="text-xs uppercase tracking-wider opacity-60 mb-2">Обратная связь</p>
+        <a id="contacts-email" href="mailto:n.3leonora@yandex.ru" class="text-xl font-medium block mb-10 hover:text-brand-light">n.3leonora@yandex.ru</a>
+        <div id="qr-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl"></div>
+    </main>
+    <script src="/assets/js/app.js?v=2608262"></script>
+    <script>boot("contacts");</script>
+</body>
+</html>
