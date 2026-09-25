@@ -12,10 +12,14 @@ from auth import check_admin_password, current_user, get_admin, is_admin_email, 
 from config import settings
 from database import (
     ConstructorOption,
+    CustomerOrder,
+    DeliveryCompany,
     GalleryImage,
     Inquiry,
+    PaymentMethod,
     Product,
     QrItem,
+    Review,
     SiteDocument,
     SiteStats,
     SiteText,
@@ -24,9 +28,12 @@ from database import (
     User,
     Visitor,
     get_db,
+    seed_payment_defaults,
 )
 from schemas import (
     ConstructorOptionsOut,
+    DeliveryCompanyIn,
+    DeliveryCompanyOut,
     DocumentOut,
     GalleryOut,
     InquiryIn,
@@ -38,10 +45,16 @@ from schemas import (
     MessageOut,
     OptionIn,
     OptionOut,
+    OrderIn,
+    OrderOut,
+    PaymentMethodIn,
+    PaymentMethodOut,
     ProductIn,
     ProductOut,
     QrIn,
     QrOut,
+    ReviewIn,
+    ReviewOut,
     StatsOut,
     TextOut,
     TextUpdate,
@@ -78,8 +91,11 @@ def ensure_stats(db: Session) -> SiteStats:
 
 
 @app.on_event("startup")
+@app.on_event("startup")
 def on_startup() -> None:
+    from database import seed_payment_defaults
     seed_if_empty()
+    seed_payment_defaults()
 
 
 @app.get("/api/health")
