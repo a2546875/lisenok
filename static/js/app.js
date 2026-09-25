@@ -141,30 +141,21 @@ function addToCart(product) {
     renderCart();
 }
 
-
 function renderCart() {
     const box = document.getElementById("cart-items");
-    const checkoutBtn = document.getElementById("checkout-btn");
-    const inquiryWrap = document.getElementById("inquiry-wrap");
-    const emptyMsg = document.getElementById("cart-empty-msg");
     if (!box) return;
     if (!cart.length) {
-        box.innerHTML = '';
-        if (emptyMsg) emptyMsg.classList.remove("hidden");
-        if (checkoutBtn) checkoutBtn.classList.add("hidden");
-        if (inquiryWrap) inquiryWrap.classList.add("hidden");
+        box.innerHTML = '<p class="text-sm opacity-70">РљРѕСЂР·РёРЅР° РїСѓСЃС‚Р°</p>';
         return;
     }
-    if (emptyMsg) emptyMsg.classList.add("hidden");
-    if (checkoutBtn) checkoutBtn.classList.remove("hidden");
-    if (inquiryWrap) inquiryWrap.classList.remove("hidden");
-    box.innerHTML = cart.map((item) =>  + "" + @"
+    box.innerHTML = cart.map((item) => `
         <div class="flex justify-between gap-4 text-sm border-b border-white/10 pb-2">
-            <span> ? </span>
-            <span></span>
+            <span>${item.name} Г— ${item.qty}</span>
+            <span>${formatPrice((wholesaleMode ? item.wholesale : item.retail) * item.qty)}</span>
         </div>
-     + "" + @").join("");
+    `).join("");
 }
+
 function fillSelect(select, values) {
     select.innerHTML = values.map((opt) => {
         const name = typeof opt === "string" ? opt : opt.name;
@@ -283,202 +274,82 @@ function updateDesignPreview() {
     renderOptionThumbs("thumbs-pattern", constructorData.pattern, "select-pattern");
 }
 
-function reviewCounts() {
-    const raw = localStorage.getItem("lisenok-review-counts") || "{}";
-    try { return JSON.parse(raw); } catch (e) { return {}; }
-}
-
-function setReviewCount(productId, count) {
-    const counts = reviewCounts();
-    counts[productId] = count;
-    localStorage.setItem("lisenok-review-counts", JSON.stringify(counts));
-}
-
-async function loadReviews(productId) {
-    const list = document.getElementById("reviews-list");
-    const empty = document.getElementById("reviews-empty");
-    const title = document.getElementById("reviews-title");
-    const form = document.getElementById("review-form-wrap");
-    if (!list) return;
-    try {
-        const res = await fetch(`${API_BASE}/api/products/${productId}/reviews`);
-        if (!res.ok) throw new Error("reviews");
-        const reviews = await res.json();
-        setReviewCount(productId, reviews.length);
-        if (title) title.textContent = "РћС‚Р·С‹РІС‹ (" + reviews.length + ")";
-        if (form) form.classList.toggle("hidden", !currentUser);
-        if (!reviews.length) {
-            list.innerHTML = "";
-            if (empty) empty.classList.remove("hidden");
-            return;
-        }
-        if (empty) empty.classList.add("hidden");
-        list.innerHTML = reviews.map((r) => {
-            const stars = Array.from({ length: r.rating }, () => "в…").join("") +
-                          Array.from({ length: 5 - r.rating }, () => "в†").join("");
-            const date = r.created_at ? new Date(r.created_at).toLocaleDateString("ru-RU") : "";
-            return `<div class="glass-card rounded-xl p-4">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-sm opacity-70">${r.user_email}</span>
-                    <span class="text-xs opacity-50">${date}</span>
-                </div>
-                <p class="text-brand-light text-lg mb-1">${stars}</p>
-                <p class="text-sm opacity-80">${r.text}</p>
-            </div>`;
-        }).join("");
-    } catch (e) {
-        console.log("reviews skip");
-    }
-}
-
-function showReviewForm(productId) {
-    const wrap = document.getElementById("review-form-wrap");
-    if (!wrap) return;
-    if (!currentUser) {
-        document.getElementById("login-modal")?.showModal();
-        return;
-    }
-    wrap.classList.remove("hidden");
-    wrap.innerHTML = `
-        <h3 class="text-lg font-semibold mb-3">РћСЃС‚Р°РІРёС‚СЊ РѕС‚Р·С‹РІ</h3>
-        <form id="review-form" class="space-y-3">
-            <div>
-                <label class="text-sm opacity-70 block mb-1">РћС†РµРЅРєР°</label>
-                <select name="rating" required class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm w-full">
-                    <option value="5">в…в…в…в…в… (5)</option>
-                    <option value="4">в…в…в…в…в† (4)</option>
-                    <option value="3">в…в…в…в†в† (3)</option>
-                    <option value="2">в…в…в†в†в† (2)</option>
-                    <option value="1">в…в†в†в†в† (1)</option>
-                </select>
-            </div>
-            <div>
-                <label class="text-sm opacity-70 block mb-1">РўРµРєСЃС‚ РѕС‚Р·С‹РІР°</label>
-                <textarea name="text" required placeholder="Р’Р°С€Рµ РјРЅРµРЅРёРµ Рѕ С‚РѕРІР°СЂРµ..." class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none min-h-24"></textarea>
-            </div>
-            <button class="px-6 py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium">РћС‚РїСЂР°РІРёС‚СЊ</button>
-        </form>
-    `;
-    wrap.querySelector("form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        try {
-            const res = await fetch(`${API_BASE}/api/products/${productId}/reviews`, {
-                method: "POST",
-                headers: authHeaders(),
-                body: JSON.stringify({ rating: Number(fd.get("rating")), text: fd.get("text") })
-            });
-            if (!res.ok) throw new Error("review fail");
-            loadReviews(productId);
-        } catch (err) {
-            wrap.innerHTML += '<p class="text-sm opacity-80 text-red-300 mt-2">РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ РѕС‚Р·С‹РІ</p>';
-        }
-    });
-}
-
-
 function renderCatalog(products) {
     const grid = document.getElementById("products-grid");
     if (!grid) return;
     if (!products.length) {
-        grid.innerHTML = '<p class="opacity-70 text-sm">Каталог пока пуст. Добавьте товары в админке.</p>';
+        grid.innerHTML = '<p class="opacity-70 text-sm">РљР°С‚Р°Р»РѕРі РїРѕРєР° РїСѓСЃС‚. Р”РѕР±Р°РІСЊС‚Рµ С‚РѕРІР°СЂС‹ РІ Р°РґРјРёРЅРєРµ.</p>';
         return;
     }
-    grid.innerHTML = products.map((product) =>  + "" + @"
+    grid.innerHTML = products.map((product) => `
         <div class="glass-card rounded-2xl p-4 transition group">
-            <img src="" alt="" class="catalog-photo js-zoom">
-            <h3 class="font-medium mb-1"></h3>
-            
+            <img src="${product.image_url || "/assets/constructor/set-vase-candle.jpg"}" alt="${product.name}" class="catalog-photo js-zoom">
+            <h3 class="font-medium mb-1">${product.name}</h3>
+            ${product.description ? `<p class="text-sm opacity-70 mb-2">${product.description}</p>` : ""}
             <p class="text-xl font-bold price-val"
-               data-retail=""
-               data-opt=" / шт от 100">
-               
+               data-retail="${formatPrice(product.retail_price)}"
+               data-opt="${formatPrice(product.wholesale_price)} / С€С‚ РѕС‚ 100">
+               ${wholesaleMode ? formatPrice(product.wholesale_price) + " / С€С‚ РѕС‚ 100" : formatPrice(product.retail_price)}
             </p>
             <button class="w-full mt-4 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green"
-                    onclick='addToCart()'>
-                В корзину
+                    onclick='addToCart(${JSON.stringify(product)})'>
+                Р’ РєРѕСЂР·РёРЅСѓ
             </button>
-            <button class="w-full mt-2 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green opt-btn ">
-                Заказать опт от 100 шт
-            </button>
-            <div class="mt-4 pt-4 border-t border-white/10">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium opacity-80">Отзывы</span>
-                    <button class="text-xs text-brand-light hover:underline review-toggle-btn" data-product-id="">
-                        Показать
-                    </button>
-                </div>
-                <div id="reviews-inline-" class="hidden space-y-2 mb-2"></div>
-                <button class="w-full py-1.5 bg-white/10 rounded-lg text-xs font-medium hover:bg-white/20 review-add-btn hidden"
-                        data-product-id="">
-                    Оставить отзыв
-                </button>
+            <div class="mt-3 pt-3 border-t border-white/10" data-reviews-product="${product.id}">
+                <button type="button" class="w-full py-2 bg-white/10 rounded-lg text-xs font-medium hover:bg-white/20 inline-review-toggle" data-product-id="${product.id}">РћС‚Р·С‹РІС‹</button>
+                <div id="inline-reviews-${product.id}" class="hidden mt-2 space-y-2"></div>
             </div>
+            <button class="w-full mt-2 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green opt-btn ${wholesaleMode ? "" : "hidden"}">
+                Р—Р°РєР°Р·Р°С‚СЊ РѕРїС‚ РѕС‚ 100 С€С‚
+            </button>
         </div>
-     + "" + @").join("");
-    
-    grid.querySelectorAll(".review-toggle-btn").forEach(btn => {
-        btn.addEventListener("click", async () => {
-            const pid = Number(btn.dataset.productId);
-            const inline = document.getElementById("reviews-inline-" + pid);
-            const addBtn = grid.querySelector('.review-add-btn[data-product-id="' + pid + '"]');
-            if (inline.classList.contains("hidden")) {
-                try {
-                    const res = await fetch(API_BASE + "/api/products/" + pid + "/reviews");
-                    const reviews = await res.json();
-                    if (reviews.length === 0) {
-                        inline.innerHTML = '<p class="text-xs opacity-60">Пока нет отзывов</p>';
-                    } else {
-                        inline.innerHTML = reviews.map(r => {
-                            const stars = "?".repeat(r.rating) + "?".repeat(5 - r.rating);
-                            return '<div class="text-xs border-b border-white/5 pb-2">' +
-                                '<span class="text-brand-light">' + stars + '</span> ' +
-                                '<span class="opacity-70">' + r.text + '</span>' +
-                                '<span class="opacity-40 ml-2">— ' + r.user_email + '</span>' +
-                                '</div>';
-                        }).join("");
-                    }
-                    if (currentUser && addBtn) addBtn.classList.remove("hidden");
-                } catch(e) { inline.innerHTML = '<p class="text-xs opacity-60">Ошибка загрузки</p>'; }
-                inline.classList.remove("hidden");
-                btn.textContent = "Скрыть";
-            } else {
-                inline.classList.add("hidden");
-                btn.textContent = "Показать";
+    `).join("");
+}
+
+async function loadInlineReviews(productId) {
+    const container = document.getElementById("inline-reviews-" + productId);
+    if (!container) return;
+    container.textContent = "Р—Р°РіСЂСѓР·РєР° РѕС‚Р·С‹РІРѕРІ...";
+    try {
+        const response = await fetch(`${API_BASE}/api/products/${productId}/reviews`);
+        if (!response.ok) throw new Error("reviews");
+        const reviews = await response.json();
+        container.innerHTML = reviews.length ? reviews.map((review) => `
+            <div class="rounded-lg bg-black/20 p-2 text-xs">
+                <p class="font-medium">${review.user_email} <span class="text-amber-300">${"в…".repeat(review.rating)}</span></p>
+                <p class="mt-1 opacity-80 whitespace-pre-wrap">${review.text}</p>
+            </div>
+        `).join("") : '<p class="text-xs opacity-70">РџРѕРєР° РЅРµС‚ РѕС‚Р·С‹РІРѕРІ</p>';
+        if (!currentUser) return;
+        const form = document.createElement("form");
+        form.className = "space-y-2 pt-1";
+        form.innerHTML = `
+            <select name="rating" class="w-full bg-black/40 border border-white/20 rounded-lg p-2 text-xs outline-none">
+                <option value="5">5 в…</option><option value="4">4 в…</option><option value="3">3 в…</option><option value="2">2 в…</option><option value="1">1 в…</option>
+            </select>
+            <textarea required name="text" placeholder="Р’Р°С€ РѕС‚Р·С‹РІ" class="w-full bg-black/40 border border-white/20 rounded-lg p-2 text-xs outline-none min-h-20"></textarea>
+            <button class="w-full py-2 bg-brand-green hover:bg-brand-hover rounded-lg text-xs font-medium">РћС‚РїСЂР°РІРёС‚СЊ РѕС‚Р·С‹РІ</button>
+        `;
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const data = new FormData(form);
+            const submit = form.querySelector("button");
+            submit.disabled = true;
+            try {
+                const result = await fetch(`${API_BASE}/api/products/${productId}/reviews`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ rating: Number(data.get("rating")), text: data.get("text") }) });
+                if (!result.ok) throw new Error("review");
+                loadInlineReviews(productId);
+            } catch (error) {
+                submit.disabled = false;
+                submit.textContent = "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ";
             }
         });
-    });
-    
-    grid.querySelectorAll(".review-add-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            if (!currentUser) { document.getElementById("login-modal")?.showModal(); return; }
-            const pid = Number(btn.dataset.productId);
-            const inline = document.getElementById("reviews-inline-" + pid);
-            const formHtml = '<form class="review-submit-form space-y-2 mt-2" data-product-id="' + pid + '">' +
-                '<select name="rating" class="bg-black/30 border border-white/20 rounded p-1 text-xs w-full">' +
-                '<option value="5">?????</option><option value="4">?????</option>' +
-                '<option value="3">?????</option><option value="2">?????</option><option value="1">?????</option>' +
-                '</select>' +
-                '<textarea name="text" required placeholder="Ваш отзыв..." class="w-full bg-black/30 border border-white/20 rounded p-2 text-xs min-h-12"></textarea>' +
-                '<button class="px-3 py-1 bg-brand-green rounded text-xs">Отправить</button>' +
-                '</form>';
-            inline.insertAdjacentHTML("beforeend", formHtml);
-            btn.remove();
-            inline.querySelector(".review-submit-form").addEventListener("submit", async (e) => {
-                e.preventDefault();
-                const fd = new FormData(e.target);
-                await fetch(API_BASE + "/api/products/" + pid + "/reviews", {
-                    method: "POST",
-                    headers: authHeaders(),
-                    body: JSON.stringify({ product_id: pid, rating: Number(fd.get("rating")), text: fd.get("text") })
-                });
-                const toggle = grid.querySelector('.review-toggle-btn[data-product-id="' + pid + '"]');
-                if (toggle && !toggle.textContent.includes("Скрыть")) toggle.click();
-                else if (toggle) { toggle.click(); toggle.click(); }
-            });
-        });
-    });
+        container.appendChild(form);
+    } catch (error) {
+        container.textContent = "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РѕС‚Р·С‹РІС‹";
+    }
 }
+
 async function loadConstructorOptions() {
     if (!document.getElementById("constructor-app") && !document.getElementById("select-set")) return;
     let data = FALLBACK_OPTIONS;
@@ -544,6 +415,7 @@ function bindSharedUi() {
     });
     document.getElementById("cart-close")?.addEventListener("click", () => cartModal.close());
     document.getElementById("checkout-btn")?.addEventListener("click", () => {
+        if (!cart.length) return;
         window.location.href = "/checkout";
     });
     document.getElementById("login-form")?.addEventListener("submit", async (event) => {
@@ -618,6 +490,15 @@ function bindSharedUi() {
         document.getElementById("mobile-menu")?.classList.toggle("open");
     });
     document.addEventListener("click", (event) => {
+        const reviewToggle = event.target.closest(".inline-review-toggle");
+        if (reviewToggle) {
+            const productId = reviewToggle.dataset.productId;
+            const container = document.getElementById("inline-reviews-" + productId);
+            if (!container) return;
+            container.classList.toggle("hidden");
+            if (!container.classList.contains("hidden")) loadInlineReviews(productId);
+            return;
+        }
         const doc = event.target.closest(".js-doc");
         if (doc) {
             event.preventDefault();
@@ -644,15 +525,6 @@ function bindPageScripts() {
     ["select-set", "select-color", "select-pattern"].forEach((id) => {
         document.getElementById(id)?.addEventListener("change", updateDesignPreview);
     });
-    document.addEventListener("click", (e) => {
-        const btn = e.target.closest(".review-btn");
-        if (btn) {
-            const pid = Number(btn.dataset.productId);
-            document.getElementById("reviews-section")?.scrollIntoView({ behavior: "smooth" });
-            loadReviews(pid);
-            showReviewForm(pid);
-        }
-    });
     document.getElementById("save-design-btn")?.addEventListener("click", () => {
         const design = window.getConstructorDesign?.().text || document.getElementById("design-preview")?.textContent;
         if (!currentUser) {
@@ -675,7 +547,6 @@ function injectShell(active) {
         ["/contacts", "РљРѕРЅС‚Р°РєС‚С‹", "contacts"]
     ];
     if (currentUser) links.push(["/support", "РџРѕРґРґРµСЂР¶РєР°", "support"]);
-    if (cart.length > 0) links.push(["/checkout", "РћС„РѕСЂРјРёС‚СЊ Р·Р°РєР°Р·", "checkout"]);
     if (active === "admin") links.push(["/admin", "РђРґРјРёРЅРєР°", "admin"]);
     const nav = links.map(([href, label, key]) =>
         `<a href="${href}" class="nav-link hover:text-white transition ${active === key ? "active" : "opacity-80"}">${label}</a>`
@@ -719,23 +590,18 @@ function injectShell(active) {
             <button id="login-close" class="mt-4 text-sm opacity-70 hover:opacity-100">Р—Р°РєСЂС‹С‚СЊ</button>
         </dialog>
         <dialog id="cart-modal" class="glass-panel rounded-3xl p-8 w-[min(520px,92vw)] text-slate-100">
-            <h3 class="text-xl font-semibold mb-4">Корзина</h3>
-            <div id="cart-empty-msg" class="text-sm opacity-70 mb-4 hidden">Корзина пуста</div>
+            <h3 class="text-xl font-semibold mb-4">РљРѕСЂР·РёРЅР°</h3>
             <div id="cart-items" class="space-y-3 mb-6"></div>
-            <button id="checkout-btn" class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium mb-3 hidden">
-                Оформить заказ
-            </button>
-            <div id="inquiry-wrap" class="hidden">
-                <p class="text-sm opacity-70 mb-3">Или оставьте заявку и мы свяжемся с вами:</p>
-                <form id="inquiry-form" class="space-y-3">
-                    <input required name="name" placeholder="Имя" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none">
-                    <input required name="contact" placeholder="Телефон или Telegram" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none">
-                    <textarea name="message" placeholder="Комментарий к заказу" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none min-h-24"></textarea>
-                    <button class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium">Отправить заявку</button>
-                </form>
-            </div>
+            <button id="checkout-btn" class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium mb-3">РћС„РѕСЂРјРёС‚СЊ Р·Р°РєР°Р·</button>
+            <form id="inquiry-form" class="space-y-3">
+                <p class="text-sm opacity-70 mb-2">РР»Рё РЅР°РїРёС€РёС‚Рµ РЅР° РїРѕС‡С‚Сѓ: <a href="mailto:n.3leonora@yandex.ru" class="underline">n.3leonora@yandex.ru</a></p>
+                <input required name="name" placeholder="РРјСЏ" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none">
+                <input required name="contact" placeholder="РўРµР»РµС„РѕРЅ РёР»Рё Telegram" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none">
+                <textarea name="message" placeholder="РљРѕРјРјРµРЅС‚Р°СЂРёР№ Рє Р·Р°РєР°Р·Сѓ" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none min-h-24"></textarea>
+                <button class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium">РћС‚РїСЂР°РІРёС‚СЊ Р·Р°СЏРІРєСѓ</button>
+            </form>
             <p id="inquiry-status" class="text-sm mt-3 opacity-80"></p>
-            <button id="cart-close" class="mt-4 text-sm opacity-70 hover:opacity-100">Закрыть</button>
+            <button id="cart-close" class="mt-4 text-sm opacity-70 hover:opacity-100">Р—Р°РєСЂС‹С‚СЊ</button>
         </dialog>
     `);
 }
