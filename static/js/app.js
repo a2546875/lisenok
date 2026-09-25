@@ -141,21 +141,30 @@ function addToCart(product) {
     renderCart();
 }
 
+
 function renderCart() {
     const box = document.getElementById("cart-items");
+    const checkoutBtn = document.getElementById("checkout-btn");
+    const inquiryWrap = document.getElementById("inquiry-wrap");
+    const emptyMsg = document.getElementById("cart-empty-msg");
     if (!box) return;
     if (!cart.length) {
-        box.innerHTML = '<p class="text-sm opacity-70">РљРѕСЂР·РёРЅР° РїСѓСЃС‚Р°</p>';
+        box.innerHTML = '';
+        if (emptyMsg) emptyMsg.classList.remove("hidden");
+        if (checkoutBtn) checkoutBtn.classList.add("hidden");
+        if (inquiryWrap) inquiryWrap.classList.add("hidden");
         return;
     }
-    box.innerHTML = cart.map((item) => `
+    if (emptyMsg) emptyMsg.classList.add("hidden");
+    if (checkoutBtn) checkoutBtn.classList.remove("hidden");
+    if (inquiryWrap) inquiryWrap.classList.remove("hidden");
+    box.innerHTML = cart.map((item) =>  + "" + @"
         <div class="flex justify-between gap-4 text-sm border-b border-white/10 pb-2">
-            <span>${item.name} Г— ${item.qty}</span>
-            <span>${formatPrice((wholesaleMode ? item.wholesale : item.retail) * item.qty)}</span>
+            <span> ? </span>
+            <span></span>
         </div>
-    `).join("");
+     + "" + @").join("");
 }
-
 function fillSelect(select, values) {
     select.innerHTML = values.map((opt) => {
         const name = typeof opt === "string" ? opt : opt.name;
@@ -367,38 +376,109 @@ function showReviewForm(productId) {
     });
 }
 
+
 function renderCatalog(products) {
     const grid = document.getElementById("products-grid");
     if (!grid) return;
     if (!products.length) {
-        grid.innerHTML = '<p class="opacity-70 text-sm">РљР°С‚Р°Р»РѕРі РїРѕРєР° РїСѓСЃС‚. Р”РѕР±Р°РІСЊС‚Рµ С‚РѕРІР°СЂС‹ РІ Р°РґРјРёРЅРєРµ.</p>';
+        grid.innerHTML = '<p class="opacity-70 text-sm">Каталог пока пуст. Добавьте товары в админке.</p>';
         return;
     }
-    grid.innerHTML = products.map((product) => `
+    grid.innerHTML = products.map((product) =>  + "" + @"
         <div class="glass-card rounded-2xl p-4 transition group">
-            <img src="${product.image_url || "/assets/constructor/set-vase-candle.jpg"}" alt="${product.name}" class="catalog-photo js-zoom">
-            <h3 class="font-medium mb-1">${product.name}</h3>
-            ${product.description ? `<p class="text-sm opacity-70 mb-2">${product.description}</p>` : ""}
+            <img src="" alt="" class="catalog-photo js-zoom">
+            <h3 class="font-medium mb-1"></h3>
+            
             <p class="text-xl font-bold price-val"
-               data-retail="${formatPrice(product.retail_price)}"
-               data-opt="${formatPrice(product.wholesale_price)} / С€С‚ РѕС‚ 100">
-               ${wholesaleMode ? formatPrice(product.wholesale_price) + " / С€С‚ РѕС‚ 100" : formatPrice(product.retail_price)}
+               data-retail=""
+               data-opt=" / шт от 100">
+               
             </p>
             <button class="w-full mt-4 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green"
-                    onclick='addToCart(${JSON.stringify(product)})'>
-                Р’ РєРѕСЂР·РёРЅСѓ
+                    onclick='addToCart()'>
+                В корзину
             </button>
-            <button class="w-full mt-2 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green opt-btn ${wholesaleMode ? "" : "hidden"}">
-                Р—Р°РєР°Р·Р°С‚СЊ РѕРїС‚ РѕС‚ 100 С€С‚
+            <button class="w-full mt-2 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green opt-btn ">
+                Заказать опт от 100 шт
             </button>
-            <button class="w-full mt-2 py-2 bg-white/10 rounded-lg text-xs font-medium hover:bg-white/20 transition review-btn"
-                    data-product-id="${product.id}">
-                РћС‚Р·С‹РІС‹ (<span id="rev-count-${product.id}">${reviewCounts()[product.id] || 0}</span>)
-            </button>
+            <div class="mt-4 pt-4 border-t border-white/10">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-medium opacity-80">Отзывы</span>
+                    <button class="text-xs text-brand-light hover:underline review-toggle-btn" data-product-id="">
+                        Показать
+                    </button>
+                </div>
+                <div id="reviews-inline-" class="hidden space-y-2 mb-2"></div>
+                <button class="w-full py-1.5 bg-white/10 rounded-lg text-xs font-medium hover:bg-white/20 review-add-btn hidden"
+                        data-product-id="">
+                    Оставить отзыв
+                </button>
+            </div>
         </div>
-    `).join("");
+     + "" + @").join("");
+    
+    grid.querySelectorAll(".review-toggle-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const pid = Number(btn.dataset.productId);
+            const inline = document.getElementById("reviews-inline-" + pid);
+            const addBtn = grid.querySelector('.review-add-btn[data-product-id="' + pid + '"]');
+            if (inline.classList.contains("hidden")) {
+                try {
+                    const res = await fetch(API_BASE + "/api/products/" + pid + "/reviews");
+                    const reviews = await res.json();
+                    if (reviews.length === 0) {
+                        inline.innerHTML = '<p class="text-xs opacity-60">Пока нет отзывов</p>';
+                    } else {
+                        inline.innerHTML = reviews.map(r => {
+                            const stars = "?".repeat(r.rating) + "?".repeat(5 - r.rating);
+                            return '<div class="text-xs border-b border-white/5 pb-2">' +
+                                '<span class="text-brand-light">' + stars + '</span> ' +
+                                '<span class="opacity-70">' + r.text + '</span>' +
+                                '<span class="opacity-40 ml-2">— ' + r.user_email + '</span>' +
+                                '</div>';
+                        }).join("");
+                    }
+                    if (currentUser && addBtn) addBtn.classList.remove("hidden");
+                } catch(e) { inline.innerHTML = '<p class="text-xs opacity-60">Ошибка загрузки</p>'; }
+                inline.classList.remove("hidden");
+                btn.textContent = "Скрыть";
+            } else {
+                inline.classList.add("hidden");
+                btn.textContent = "Показать";
+            }
+        });
+    });
+    
+    grid.querySelectorAll(".review-add-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            if (!currentUser) { document.getElementById("login-modal")?.showModal(); return; }
+            const pid = Number(btn.dataset.productId);
+            const inline = document.getElementById("reviews-inline-" + pid);
+            const formHtml = '<form class="review-submit-form space-y-2 mt-2" data-product-id="' + pid + '">' +
+                '<select name="rating" class="bg-black/30 border border-white/20 rounded p-1 text-xs w-full">' +
+                '<option value="5">?????</option><option value="4">?????</option>' +
+                '<option value="3">?????</option><option value="2">?????</option><option value="1">?????</option>' +
+                '</select>' +
+                '<textarea name="text" required placeholder="Ваш отзыв..." class="w-full bg-black/30 border border-white/20 rounded p-2 text-xs min-h-12"></textarea>' +
+                '<button class="px-3 py-1 bg-brand-green rounded text-xs">Отправить</button>' +
+                '</form>';
+            inline.insertAdjacentHTML("beforeend", formHtml);
+            btn.remove();
+            inline.querySelector(".review-submit-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                await fetch(API_BASE + "/api/products/" + pid + "/reviews", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ product_id: pid, rating: Number(fd.get("rating")), text: fd.get("text") })
+                });
+                const toggle = grid.querySelector('.review-toggle-btn[data-product-id="' + pid + '"]');
+                if (toggle && !toggle.textContent.includes("Скрыть")) toggle.click();
+                else if (toggle) { toggle.click(); toggle.click(); }
+            });
+        });
+    });
 }
-
 async function loadConstructorOptions() {
     if (!document.getElementById("constructor-app") && !document.getElementById("select-set")) return;
     let data = FALLBACK_OPTIONS;
@@ -463,6 +543,9 @@ function bindSharedUi() {
         cartModal.showModal();
     });
     document.getElementById("cart-close")?.addEventListener("click", () => cartModal.close());
+    document.getElementById("checkout-btn")?.addEventListener("click", () => {
+        window.location.href = "/checkout";
+    });
     document.getElementById("login-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const form = event.target;
@@ -636,18 +719,23 @@ function injectShell(active) {
             <button id="login-close" class="mt-4 text-sm opacity-70 hover:opacity-100">Р—Р°РєСЂС‹С‚СЊ</button>
         </dialog>
         <dialog id="cart-modal" class="glass-panel rounded-3xl p-8 w-[min(520px,92vw)] text-slate-100">
-            <h3 class="text-xl font-semibold mb-4">РљРѕСЂР·РёРЅР°</h3>
+            <h3 class="text-xl font-semibold mb-4">Корзина</h3>
+            <div id="cart-empty-msg" class="text-sm opacity-70 mb-4 hidden">Корзина пуста</div>
             <div id="cart-items" class="space-y-3 mb-6"></div>
-            <a href="/checkout" id="cart-checkout-btn" class="block w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg text-center font-medium mb-4 transition">РћС„РѕСЂРјРёС‚СЊ Р·Р°РєР°Р·</a>
-            <form id="inquiry-form" class="space-y-3">
-                <p class="text-sm opacity-70 mb-2">РР»Рё РЅР°РїРёС€РёС‚Рµ РЅР° РїРѕС‡С‚Сѓ: <a href="mailto:n.3leonora@yandex.ru" class="underline">n.3leonora@yandex.ru</a></p>
-                <input required name="name" placeholder="РРјСЏ" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none">
-                <input required name="contact" placeholder="РўРµР»РµС„РѕРЅ РёР»Рё Telegram" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none">
-                <textarea name="message" placeholder="РљРѕРјРјРµРЅС‚Р°СЂРёР№ Рє Р·Р°РєР°Р·Сѓ" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none min-h-24"></textarea>
-                <button class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium">РћС‚РїСЂР°РІРёС‚СЊ Р·Р°СЏРІРєСѓ</button>
-            </form>
+            <button id="checkout-btn" class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium mb-3 hidden">
+                Оформить заказ
+            </button>
+            <div id="inquiry-wrap" class="hidden">
+                <p class="text-sm opacity-70 mb-3">Или оставьте заявку и мы свяжемся с вами:</p>
+                <form id="inquiry-form" class="space-y-3">
+                    <input required name="name" placeholder="Имя" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none">
+                    <input required name="contact" placeholder="Телефон или Telegram" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none">
+                    <textarea name="message" placeholder="Комментарий к заказу" class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none min-h-24"></textarea>
+                    <button class="w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium">Отправить заявку</button>
+                </form>
+            </div>
             <p id="inquiry-status" class="text-sm mt-3 opacity-80"></p>
-            <button id="cart-close" class="mt-4 text-sm opacity-70 hover:opacity-100">Р—Р°РєСЂС‹С‚СЊ</button>
+            <button id="cart-close" class="mt-4 text-sm opacity-70 hover:opacity-100">Закрыть</button>
         </dialog>
     `);
 }
