@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import json
 from urllib.parse import quote
 
@@ -309,7 +309,7 @@ def qr_image(item: QrItem) -> str:
 
 @app.get("/api/site")
 def public_site(db: Session = Depends(get_db)):
-    texts = {row.key: row.value for row in db.query(SiteText).all()}
+    texts = {row.key: row.value for row in db.query(SiteText).filter(SiteText.page != "constructor", SiteText.key != "home_notice").all()}
     qrs = [
         {
             "id": item.id,
