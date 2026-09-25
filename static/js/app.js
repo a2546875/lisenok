@@ -288,8 +288,8 @@ function renderCatalog(products) {
             ${product.description ? `<p class="text-sm opacity-70 mb-2">${product.description}</p>` : ""}
             <p class="text-xl font-bold price-val"
                data-retail="${formatPrice(product.retail_price)}"
-               data-opt="${formatPrice(product.wholesale_price)} / шт от 100">
-               ${wholesaleMode ? formatPrice(product.wholesale_price) + " / шт от 100" : formatPrice(product.retail_price)}
+               data-opt="${formatPrice(product.wholesale_price)} / шт от 50">
+               ${wholesaleMode ? formatPrice(product.wholesale_price) + " / шт от 50" : formatPrice(product.retail_price)}
             </p>
             <button class="w-full mt-4 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green"
                     onclick='addToCart(${JSON.stringify(product)})'>
@@ -300,7 +300,7 @@ function renderCatalog(products) {
                 <div id="inline-reviews-${product.id}" class="hidden mt-2 space-y-2"></div>
             </div>
             <button class="w-full mt-2 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green opt-btn ${wholesaleMode ? "" : "hidden"}">
-                Заказать опт от 100 шт
+                Заказать опт от 50 шт
             </button>
         </div>
     `).join("");
@@ -515,7 +515,7 @@ function bindPageScripts() {
     document.getElementById("mode-toggle")?.addEventListener("change", function () {
         wholesaleMode = this.checked;
         const label = document.getElementById("mode-label");
-        if (label) label.textContent = wholesaleMode ? "Опт, заказ от 100 шт" : "Розница";
+        if (label) label.textContent = wholesaleMode ? "Опт, заказ от 50 шт" : "Розница";
         document.querySelectorAll(".price-val").forEach((price) => {
             price.textContent = wholesaleMode ? price.dataset.opt : price.dataset.retail;
         });
@@ -542,7 +542,6 @@ function injectShell(active) {
     const links = [
         ["/", "Презентация", "home"],
         ["/catalog", "Каталог", "catalog"],
-        ["/constructor", "Конструктор", "constructor"],
         ["/docs", "Документация", "docs"],
         ["/contacts", "Контакты", "contacts"]
     ];

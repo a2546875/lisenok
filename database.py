@@ -191,6 +191,22 @@ def migrate_schema() -> None:
             conn.exec_driver_sql("ALTER TABLE constructor_options ADD COLUMN IF NOT EXISTS price FLOAT DEFAULT 0")
 
 
+def update_wholesale_site_texts() -> None:
+    replacements = {"от 100": "от 50", "100 штук": "50 штук", "100 шт": "50 шт"}
+    db = SessionLocal()
+    try:
+        for text in db.query(SiteText).all():
+            value = text.value or ""
+            updated = value
+            for old, new in replacements.items():
+                updated = updated.replace(old, new)
+            if updated != value:
+                text.value = updated
+        db.commit()
+    finally:
+        db.close()
+
+
 migrate_schema()
 
 

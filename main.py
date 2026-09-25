@@ -29,6 +29,7 @@ from database import (
     Visitor,
     get_db,
     seed_payment_defaults,
+    update_wholesale_site_texts,
 )
 from schemas import (
     ConstructorOptionsOut,
@@ -91,10 +92,9 @@ def ensure_stats(db: Session) -> SiteStats:
 
 
 @app.on_event("startup")
-@app.on_event("startup")
 def on_startup() -> None:
-    from database import seed_payment_defaults
     seed_if_empty()
+    update_wholesale_site_texts()
     seed_payment_defaults()
 
 

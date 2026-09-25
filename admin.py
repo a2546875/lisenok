@@ -2,16 +2,11 @@ from contextlib import contextmanager
 
 import streamlit as st
 
-from database import ConstructorOption, Inquiry, Product, SessionLocal
+from database import Inquiry, Product, SessionLocal
 from seed import seed_if_empty
 
 seed_if_empty()
 
-CATEGORY_LABELS = {
-    "set_type": "Состав набора",
-    "color": "Цвет гипса",
-    "pattern": "Узор / Декор",
-}
 
 
 @contextmanager
@@ -30,14 +25,14 @@ def db_session():
 st.set_page_config(page_title="Админка Лисёнок", layout="wide")
 st.title("Панель управления: Лисёнок")
 
-tab1, tab2, tab3 = st.tabs(["🛍️ Управление каталогом", "🎨 Настройки конструктора", "✉️ Заявки"])
+tab1, tab2 = st.tabs(["🛍️ Управление каталогом", "✉️ Заявки"])
 
 with tab1:
     st.header("Добавить новый товар")
     with st.form("new_product_form", clear_on_submit=True):
         name = st.text_input("Название (например: Ваза 'Мох')")
         retail = st.number_input("Розничная цена (₽)", min_value=0.0, step=100.0)
-        wholesale = st.number_input("Оптовая цена от 100 шт (₽)", min_value=0.0, step=100.0)
+        wholesale = st.number_input("Оптовая цена от 50 шт (₽)", min_value=0.0, step=100.0)
         img_url = st.text_input("URL картинки товара")
 
         if st.form_submit_button("Добавить в каталог") and name:
@@ -82,37 +77,6 @@ with tab1:
                     st.rerun()
 
 with tab2:
-    st.header("Опции конструктора")
-    st.caption("Покупатель меняет состав набора и цвет. Форма изделия не меняется. Узоры и эскизы наносятся только из списка ниже.")
-    with st.form("new_option_form", clear_on_submit=True):
-        category = st.selectbox(
-            "Категория",
-            ["set_type", "color", "pattern"],
-            format_func=lambda x: CATEGORY_LABELS[x],
-        )
-        opt_name = st.text_input("Название опции (например: Королевский синий кинцуги)")
-
-        if st.form_submit_button("Добавить опцию") and opt_name:
-            with db_session() as db:
-                db.add(ConstructorOption(category=category, name=opt_name))
-            st.success(f"Опция «{opt_name}» добавлена в меню конструктора!")
-            st.rerun()
-
-    st.divider()
-    with db_session() as db:
-        options = db.query(ConstructorOption).order_by(ConstructorOption.category, ConstructorOption.id).all()
-        if not options:
-            st.info("Опций пока нет.")
-        else:
-            for option in options:
-                left, right = st.columns([5, 1])
-                left.write(f"**{CATEGORY_LABELS.get(option.category, option.category)}** — {option.name}")
-                if right.button("Удалить", key=f"opt-del-{option.id}"):
-                    db.delete(option)
-                    db.commit()
-                    st.rerun()
-
-with tab3:
     st.header("Заявки с сайта")
     with db_session() as db:
         inquiries = db.query(Inquiry).order_by(Inquiry.id.desc()).all()

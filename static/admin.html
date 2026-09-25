@@ -80,7 +80,7 @@
                     <input name="name" required placeholder="Название" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
                     <input name="description" placeholder="Описание" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
                     <input name="retail_price" type="number" min="0" placeholder="Розница" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
-                    <input name="wholesale_price" type="number" min="0" placeholder="Опт от 100" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input name="wholesale_price" type="number" min="0" placeholder="Опт от 50" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
                     <input type="file" name="file" accept="image/*" class="text-sm">
                     <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить</button>
                 </form>
@@ -97,20 +97,6 @@
                 <div id="tickets" class="space-y-5 text-sm"></div>
             </section>
 
-            <section>
-                <h2 class="text-xl font-semibold mb-4">Конструктор</h2>
-                <form id="option-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                    <select name="category" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
-                        <option value="set_type">Состав набора</option>
-                        <option value="color">Цвет набора</option>
-                        <option value="pattern">Узор / эскиз</option>
-                    </select>
-                    <input name="name" required placeholder="Название опции" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
-                    <input type="file" name="file" accept="image/*" class="text-sm">
-                    <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить</button>
-                </form>
-                <div id="options" class="space-y-2 text-sm"></div>
-            </section>
 
             <section>
                 <h2 class="text-xl font-semibold mb-4">Способы оплаты</h2>
@@ -168,11 +154,10 @@
             }
             document.getElementById("panel").classList.remove("hidden");
             try {
-                const [stats, texts, products, options, qrs, gallery, users, tickets, docs, payments, deliveries, orders] = await Promise.all([
+                const [stats, texts, products, qrs, gallery, users, tickets, docs, payments, deliveries, orders] = await Promise.all([
                     adminGet("/api/admin/stats"),
                     adminGet("/api/admin/texts"),
                     adminGet("/api/admin/products"),
-                    adminGet("/api/admin/options"),
                     adminGet("/api/admin/qrs"),
                     adminGet("/api/admin/gallery"),
                     adminGet("/api/admin/users"),
@@ -241,17 +226,6 @@
                         </form>
                     </div>
                 `).join("") || "<p class='opacity-70'>Обращений нет</p>";
-                document.getElementById("options").innerHTML = options.map((o) => `
-                    <div class="flex flex-col md:flex-row gap-3 items-center border-b border-white/10 pb-3">
-                        ${o.image_url ? `<img src="${o.image_url}" alt="${o.name}" class="admin-thumb js-zoom">` : '<div class="admin-thumb flex items-center justify-center text-xs opacity-50">Нет фото</div>'}
-                        <span class="flex-1">${CATEGORY[o.category]} — ${o.name}</span>
-                        <form class="option-photo flex items-center gap-2" data-id="${o.id}">
-                            <input type="file" name="file" accept="image/*" required class="text-sm">
-                            <button class="px-3 py-2 bg-brand-green rounded-lg">Фото</button>
-                        </form>
-                        <button onclick="removeOption(${o.id})">Удалить</button>
-                    </div>
-                `).join("");
 
                 document.getElementById("payments").innerHTML = payments.map((p) => `
                     <div class="flex flex-wrap gap-3 items-center border-b border-white/10 pb-2">
@@ -324,17 +298,6 @@
                     loadAdmin();
                 };
             });
-            document.querySelectorAll(".option-photo").forEach((form) => {
-                form.onsubmit = async (event) => {
-                    event.preventDefault();
-                    await fetch(`/api/admin/options/${form.dataset.id}/photo`, {
-                        method: "POST",
-                        headers: authHeaders(false),
-                        body: new FormData(form)
-                    });
-                    loadAdmin();
-                };
-            });
             document.querySelectorAll(".admin-reply").forEach((form) => {
                 form.onsubmit = async (event) => {
                     event.preventDefault();
@@ -349,7 +312,6 @@
         }
 
         async function removeProduct(id) { await fetch(`/api/admin/products/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
-        async function removeOption(id) { await fetch(`/api/admin/options/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
         async function removeQr(id) { await fetch(`/api/admin/qrs/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
         async function removeGallery(id) { await fetch(`/api/admin/gallery/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
         async function removeDoc(id) { await fetch(`/api/admin/documents/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
@@ -426,14 +388,7 @@
             await fetch("/api/admin/gallery", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
             event.target.reset();
             loadAdmin();
-        });
-        document.getElementById("option-form").addEventListener("submit", async (event) => {
-            event.preventDefault();
-            await fetch("/api/admin/options", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
-            event.target.reset();
-            loadAdmin();
-        });
-        document.getElementById("doc-form").addEventListener("submit", async (event) => {
+        });`n        document.getElementById("doc-form").addEventListener("submit", async (event) => {
             event.preventDefault();
             await fetch("/api/admin/documents", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
             event.target.reset();
