@@ -1,4 +1,5 @@
-from pathlib import Path
+﻿from pathlib import Path
+import json
 from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
@@ -568,6 +569,170 @@ def support_page() -> FileResponse:
 def checkout_page() -> FileResponse:
     return page("checkout.html")
 
+# ─── Доставка (публичный) ────────────────────────────────────────────────────
+@app.get("/api/delivery")
+def public_delivery(db: Session = Depends(get_db)):
+    return db.query(DeliveryCompany).filter(DeliveryCompany.is_active.is_(True)).order_by(DeliveryCompany.sort_order).all()
+
+
+# ─── Способы оплаты (публичный) ──────────────────────────────────────────────
+@app.get("/api/payment-methods")
+def public_payment_methods(client_type: str = "individual", db: Session = Depends(get_db)):
+    return db.query(PaymentMethod).filter(
+        PaymentMethod.is_active.is_(True),
+        PaymentMethod.client_type == client_type
+    ).order_by(PaymentMethod.sort_order).all()
+
+
+# ─── Заказы ──────────────────────────────────────────────────────────────────
+@app.post("/api/orders", response_model=OrderOut)
+def create_order(payload: OrderIn, user: dict = Depends(current_user), db: Session = Depends(get_db)):
+    order = CustomerOrder(
+        user_email=user["email"],
+        items=json.dumps([item.model_dump() for item in payload.items], ensure_ascii=False),
+        total=payload.total,
+        delivery_method=payload.delivery_method,
+        delivery_address=payload.delivery_address,
+        payment_type=payload.payment_type,
+        payment_details=payload.payment_details,
+        status="new",
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@app.get("/api/orders", response_model=list[OrderOut])
+def my_orders(user: dict = Depends(current_user), db: Session = Depends(get_db)):
+    return db.query(CustomerOrder).filter(
+        CustomerOrder.user_email == user["email"]
+    ).order_by(CustomerOrder.id.desc()).all()
+
+
+# ─── Отзывы ──────────────────────────────────────────────────────────────────
+@app.get("/api/products/{product_id}/reviews", response_model=list[ReviewOut])
+def product_reviews(product_id: int, db: Session = Depends(get_db)):
+    return db.query(Review).filter(
+        Review.product_id == product_id,
+        Review.is_visible.is_(True),
+    ).order_by(Review.id.desc()).all()
+
+
+@app.post("/api/products/{product_id}/reviews", response_model=ReviewOut)
+def create_review(product_id: int, payload: ReviewIn, user: dict = Depends(current_user), db: Session = Depends(get_db)):
+    review = Review(
+        product_id=product_id,
+        user_email=user["email"],
+        rating=payload.rating,
+        text=payload.text,
+        is_visible=True,
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+    return review
+
+
+# ─── АДМИН: Заказы ───────────────────────────────────────────────────────────
+@app.get("/api/admin/orders", response_model=list[OrderOut])
+def admin_orders(_admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    return db.query(CustomerOrder).order_by(CustomerOrder.id.desc()).all()
+
+
+@app.post("/api/admin/orders/{order_id}/status")
+def update_order_status(order_id: int, status: str = Form(...), _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    order = db.query(CustomerOrder).filter(CustomerOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    order.status = status
+    db.commit()
+    return {"ok": True}
+
+
+# ─── АДМИН: Отзывы ───────────────────────────────────────────────────────────
+@app.delete("/api/admin/reviews/{review_id}")
+def hide_review(review_id: int, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Отзыв не найден")
+    review.is_visible = False
+    db.commit()
+    return {"ok": True}
+
+
+# ─── АДМИН: Способы оплаты ───────────────────────────────────────────────────
+@app.get("/api/admin/payment-methods", response_model=list[PaymentMethodOut])
+def admin_payment_methods(_admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    return db.query(PaymentMethod).order_by(PaymentMethod.sort_order).all()
+
+
+@app.post("/api/admin/payment-methods", response_model=PaymentMethodOut)
+def add_payment_method(payload: PaymentMethodIn, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    pm = PaymentMethod(**payload.model_dump())
+    db.add(pm)
+    db.commit()
+    db.refresh(pm)
+    return pm
+
+
+@app.put("/api/admin/payment-methods/{method_id}", response_model=PaymentMethodOut)
+def update_payment_method(method_id: int, payload: PaymentMethodIn, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    pm = db.query(PaymentMethod).filter(PaymentMethod.id == method_id).first()
+    if not pm:
+        raise HTTPException(status_code=404, detail="Метод не найден")
+    for key, value in payload.model_dump().items():
+        setattr(pm, key, value)
+    db.commit()
+    db.refresh(pm)
+    return pm
+
+
+@app.delete("/api/admin/payment-methods/{method_id}")
+def delete_payment_method(method_id: int, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    pm = db.query(PaymentMethod).filter(PaymentMethod.id == method_id).first()
+    if not pm:
+        raise HTTPException(status_code=404, detail="Метод не найден")
+    db.delete(pm)
+    db.commit()
+    return {"ok": True}
+
+
+# ─── АДМИН: Службы доставки ──────────────────────────────────────────────────
+@app.get("/api/admin/delivery", response_model=list[DeliveryCompanyOut])
+def admin_delivery(_admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    return db.query(DeliveryCompany).order_by(DeliveryCompany.sort_order).all()
+
+
+@app.post("/api/admin/delivery", response_model=DeliveryCompanyOut)
+def add_delivery(payload: DeliveryCompanyIn, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    dc = DeliveryCompany(**payload.model_dump())
+    db.add(dc)
+    db.commit()
+    db.refresh(dc)
+    return dc
+
+
+@app.put("/api/admin/delivery/{company_id}", response_model=DeliveryCompanyOut)
+def update_delivery(company_id: int, payload: DeliveryCompanyIn, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    dc = db.query(DeliveryCompany).filter(DeliveryCompany.id == company_id).first()
+    if not dc:
+        raise HTTPException(status_code=404, detail="Компания не найдена")
+    for key, value in payload.model_dump().items():
+        setattr(dc, key, value)
+    db.commit()
+    db.refresh(dc)
+    return dc
+
+
+@app.delete("/api/admin/delivery/{company_id}")
+def delete_delivery(company_id: int, _admin: dict = Depends(get_admin), db: Session = Depends(get_db)):
+    dc = db.query(DeliveryCompany).filter(DeliveryCompany.id == company_id).first()
+    if not dc:
+        raise HTTPException(status_code=404, detail="Компания не найдена")
+    db.delete(dc)
+    db.commit()
+    return {"ok": True}
 
 if STATIC_DIR.exists():
     app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
