@@ -274,6 +274,99 @@ function updateDesignPreview() {
     renderOptionThumbs("thumbs-pattern", constructorData.pattern, "select-pattern");
 }
 
+function reviewCounts() {
+    const raw = localStorage.getItem("lisenok-review-counts") || "{}";
+    try { return JSON.parse(raw); } catch (e) { return {}; }
+}
+
+function setReviewCount(productId, count) {
+    const counts = reviewCounts();
+    counts[productId] = count;
+    localStorage.setItem("lisenok-review-counts", JSON.stringify(counts));
+}
+
+async function loadReviews(productId) {
+    const list = document.getElementById("reviews-list");
+    const empty = document.getElementById("reviews-empty");
+    const title = document.getElementById("reviews-title");
+    const form = document.getElementById("review-form-wrap");
+    if (!list) return;
+    try {
+        const res = await fetch(`${API_BASE}/api/products/${productId}/reviews`);
+        if (!res.ok) throw new Error("reviews");
+        const reviews = await res.json();
+        setReviewCount(productId, reviews.length);
+        if (title) title.textContent = "Отзывы (" + reviews.length + ")";
+        if (form) form.classList.toggle("hidden", !currentUser);
+        if (!reviews.length) {
+            list.innerHTML = "";
+            if (empty) empty.classList.remove("hidden");
+            return;
+        }
+        if (empty) empty.classList.add("hidden");
+        list.innerHTML = reviews.map((r) => {
+            const stars = Array.from({ length: r.rating }, () => "★").join("") +
+                          Array.from({ length: 5 - r.rating }, () => "☆").join("");
+            const date = r.created_at ? new Date(r.created_at).toLocaleDateString("ru-RU") : "";
+            return `<div class="glass-card rounded-xl p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-sm opacity-70">${r.user_email}</span>
+                    <span class="text-xs opacity-50">${date}</span>
+                </div>
+                <p class="text-brand-light text-lg mb-1">${stars}</p>
+                <p class="text-sm opacity-80">${r.text}</p>
+            </div>`;
+        }).join("");
+    } catch (e) {
+        console.log("reviews skip");
+    }
+}
+
+function showReviewForm(productId) {
+    const wrap = document.getElementById("review-form-wrap");
+    if (!wrap) return;
+    if (!currentUser) {
+        document.getElementById("login-modal")?.showModal();
+        return;
+    }
+    wrap.classList.remove("hidden");
+    wrap.innerHTML = `
+        <h3 class="text-lg font-semibold mb-3">Оставить отзыв</h3>
+        <form id="review-form" class="space-y-3">
+            <div>
+                <label class="text-sm opacity-70 block mb-1">Оценка</label>
+                <select name="rating" required class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm w-full">
+                    <option value="5">★★★★★ (5)</option>
+                    <option value="4">★★★★☆ (4)</option>
+                    <option value="3">★★★☆☆ (3)</option>
+                    <option value="2">★★☆☆☆ (2)</option>
+                    <option value="1">★☆☆☆☆ (1)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-sm opacity-70 block mb-1">Текст отзыва</label>
+                <textarea name="text" required placeholder="Ваше мнение о товаре..." class="w-full bg-black/30 border border-white/20 rounded-lg p-3 text-sm outline-none min-h-24"></textarea>
+            </div>
+            <button class="px-6 py-3 bg-brand-green hover:bg-brand-hover rounded-lg font-medium">Отправить</button>
+        </form>
+    `;
+    wrap.querySelector("form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        try {
+            const res = await fetch(`${API_BASE}/api/products/${productId}/reviews`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({ rating: Number(fd.get("rating")), text: fd.get("text") })
+            });
+            if (!res.ok) throw new Error("review fail");
+            loadReviews(productId);
+        } catch (err) {
+            wrap.innerHTML += '<p class="text-sm opacity-80 text-red-300 mt-2">Не удалось отправить отзыв</p>';
+        }
+    });
+}
+
 function renderCatalog(products) {
     const grid = document.getElementById("products-grid");
     if (!grid) return;
@@ -297,6 +390,10 @@ function renderCatalog(products) {
             </button>
             <button class="w-full mt-2 py-2 bg-brand-green/80 rounded-lg text-sm font-medium hover:bg-brand-green opt-btn ${wholesaleMode ? "" : "hidden"}">
                 Заказать опт от 100 шт
+            </button>
+            <button class="w-full mt-2 py-2 bg-white/10 rounded-lg text-xs font-medium hover:bg-white/20 transition review-btn"
+                    data-product-id="${product.id}">
+                Отзывы (<span id="rev-count-${product.id}">${reviewCounts()[product.id] || 0}</span>)
             </button>
         </div>
     `).join("");
@@ -464,6 +561,15 @@ function bindPageScripts() {
     ["select-set", "select-color", "select-pattern"].forEach((id) => {
         document.getElementById(id)?.addEventListener("change", updateDesignPreview);
     });
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".review-btn");
+        if (btn) {
+            const pid = Number(btn.dataset.productId);
+            document.getElementById("reviews-section")?.scrollIntoView({ behavior: "smooth" });
+            loadReviews(pid);
+            showReviewForm(pid);
+        }
+    });
     document.getElementById("save-design-btn")?.addEventListener("click", () => {
         const design = window.getConstructorDesign?.().text || document.getElementById("design-preview")?.textContent;
         if (!currentUser) {
@@ -486,6 +592,7 @@ function injectShell(active) {
         ["/contacts", "Контакты", "contacts"]
     ];
     if (currentUser) links.push(["/support", "Поддержка", "support"]);
+    if (cart.length > 0) links.push(["/checkout", "Оформить заказ", "checkout"]);
     if (active === "admin") links.push(["/admin", "Админка", "admin"]);
     const nav = links.map(([href, label, key]) =>
         `<a href="${href}" class="nav-link hover:text-white transition ${active === key ? "active" : "opacity-80"}">${label}</a>`
@@ -531,6 +638,7 @@ function injectShell(active) {
         <dialog id="cart-modal" class="glass-panel rounded-3xl p-8 w-[min(520px,92vw)] text-slate-100">
             <h3 class="text-xl font-semibold mb-4">Корзина</h3>
             <div id="cart-items" class="space-y-3 mb-6"></div>
+            <a href="/checkout" id="cart-checkout-btn" class="block w-full py-3 bg-brand-green hover:bg-brand-hover rounded-lg text-center font-medium mb-4 transition">Оформить заказ</a>
             <form id="inquiry-form" class="space-y-3">
                 <p class="text-sm opacity-70 mb-2">Или напишите на почту: <a href="mailto:n.3leonora@yandex.ru" class="underline">n.3leonora@yandex.ru</a></p>
                 <input required name="name" placeholder="Имя" class="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-sm outline-none">

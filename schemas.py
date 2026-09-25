@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -177,3 +177,87 @@ class InquiryOut(BaseModel):
     message: str | None = None
     design: str | None = None
     created_at: datetime | None = None
+
+
+# -- Orders --
+class OrderItemIn(BaseModel):
+    product_id: int
+    name: str
+    qty: int
+    price: float
+
+
+class OrderIn(BaseModel):
+    items: list[OrderItemIn]
+    total: float
+    delivery_method: str
+    delivery_address: str
+    payment_type: str
+    payment_details: str = ""
+
+
+class OrderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    user_email: str
+    items: str
+    total: float
+    delivery_method: str
+    delivery_address: str
+    payment_type: str
+    payment_details: str
+    status: str
+    created_at: datetime | None = None
+
+
+# -- Reviews --
+class ReviewIn(BaseModel):
+    product_id: int
+    rating: int = Field(ge=1, le=5)
+    text: str
+
+
+class ReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    product_id: int
+    user_email: str
+    rating: int
+    text: str
+    created_at: datetime | None = None
+
+
+# -- Payment Methods --
+class PaymentMethodOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    client_type: str
+    is_active: bool
+    details: str | None = None
+    sort_order: int = 0
+
+
+class PaymentMethodIn(BaseModel):
+    name: str
+    client_type: str
+    details: str = ""
+    is_active: bool = True
+    sort_order: int = 0
+
+
+# -- Delivery Companies --
+class DeliveryCompanyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    display_name: str
+    is_active: bool
+    sort_order: int = 0
+
+
+class DeliveryCompanyIn(BaseModel):
+    name: str
+    display_name: str
+    is_active: bool = True
+    sort_order: int = 0

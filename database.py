@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, create_engine
+﻿from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
 
@@ -127,6 +127,50 @@ class SupportMessage(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class CustomerOrder(Base):
+    __tablename__ = "orders"
+    id = Column(Integer, primary_key=True, index=True)
+    user_email = Column(String, index=True)
+    items = Column(Text)
+    total = Column(Float)
+    delivery_method = Column(String)
+    delivery_address = Column(Text)
+    payment_type = Column(String)
+    payment_details = Column(Text)
+    status = Column(String, default="new")
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, index=True)
+    user_email = Column(String)
+    rating = Column(Integer)
+    text = Column(Text)
+    is_visible = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class PaymentMethod(Base):
+    __tablename__ = "payment_methods"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    client_type = Column(String)
+    is_active = Column(Boolean, default=True)
+    details = Column(Text)
+    sort_order = Column(Integer, default=0)
+
+
+class DeliveryCompany(Base):
+    __tablename__ = "delivery_companies"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True)
+    display_name = Column(String)
+    is_active = Column(Boolean, default=True)
+    sort_order = Column(Integer, default=0)
+
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -148,6 +192,21 @@ def migrate_schema() -> None:
 
 
 migrate_schema()
+
+
+def seed_payment_defaults() -> None:
+    db = SessionLocal()
+    try:
+        if db.query(DeliveryCompany).count() == 0:
+            db.add(DeliveryCompany(name="ozon", display_name="Озон (маркетплейс)", is_active=True, sort_order=1))
+            db.add(DeliveryCompany(name="5post", display_name="5Post (X5 Group)", is_active=True, sort_order=2))
+        if db.query(PaymentMethod).count() == 0:
+            db.add(PaymentMethod(name="Оплата картой", client_type="individual", is_active=True, details="{}", sort_order=1))
+            db.add(PaymentMethod(name="QR-код", client_type="individual", is_active=True, details="{}", sort_order=2))
+            db.add(PaymentMethod(name="Счёт для юрлиц", client_type="legal", is_active=True, details="{}", sort_order=3))
+        db.commit()
+    finally:
+        db.close()
 
 
 def get_db():

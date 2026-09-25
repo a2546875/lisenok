@@ -111,6 +111,42 @@
                 </form>
                 <div id="options" class="space-y-2 text-sm"></div>
             </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Способы оплаты</h2>
+                <form id="payment-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                    <input name="name" required placeholder="Название" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <select name="client_type" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                        <option value="individual">Физ. лицо</option>
+                        <option value="legal">Юр. лицо</option>
+                    </select>
+                    <textarea name="details" placeholder="JSON с реквизитами" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm"></textarea>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" checked class="accent-brand-green"> Активно</label>
+                    <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить</button>
+                </form>
+                <div id="payments" class="space-y-2 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Службы доставки</h2>
+                <form id="delivery-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <input name="name" required placeholder="Ключ (name)" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <input name="display_name" required placeholder="Отображаемое имя" class="bg-black/30 border border-white/20 rounded-lg p-3 text-sm">
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" checked class="accent-brand-green"> Активно</label>
+                    <button class="py-3 bg-brand-green rounded-lg text-sm">Добавить</button>
+                </form>
+                <div id="deliveries" class="space-y-2 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Заказы</h2>
+                <div id="orders" class="space-y-4 text-sm"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold mb-4">Отзывы</h2>
+                <div id="admin-reviews" class="space-y-3 text-sm"></div>
+            </section>
         </div>
     </main>
     <script src="/assets/js/app.js?v=2608262"></script>
@@ -132,7 +168,7 @@
             }
             document.getElementById("panel").classList.remove("hidden");
             try {
-                const [stats, texts, products, options, qrs, gallery, users, tickets, docs] = await Promise.all([
+                const [stats, texts, products, options, qrs, gallery, users, tickets, docs, payments, deliveries, orders] = await Promise.all([
                     adminGet("/api/admin/stats"),
                     adminGet("/api/admin/texts"),
                     adminGet("/api/admin/products"),
@@ -141,7 +177,10 @@
                     adminGet("/api/admin/gallery"),
                     adminGet("/api/admin/users"),
                     adminGet("/api/support/tickets"),
-                    adminGet("/api/admin/documents")
+                    adminGet("/api/admin/documents"),
+                    adminGet("/api/admin/payment-methods"),
+                    adminGet("/api/admin/delivery"),
+                    adminGet("/api/admin/orders")
                 ]);
                 document.getElementById("stat-views").textContent = stats.page_views;
                 document.getElementById("stat-unique").textContent = stats.unique_visitors;
@@ -213,6 +252,42 @@
                         <button onclick="removeOption(${o.id})">Удалить</button>
                     </div>
                 `).join("");
+
+                document.getElementById("payments").innerHTML = payments.map((p) => `
+                    <div class="flex flex-wrap gap-3 items-center border-b border-white/10 pb-2">
+                        <span class="flex-1">${p.name} · ${p.client_type} ${p.is_active ? "" : "(неактивен)"}</span>
+                        <button onclick="removePayment(${p.id})">Удалить</button>
+                    </div>
+                `).join("") || "<p class=\"opacity-70\">Нет способов оплаты</p>";
+
+                document.getElementById("deliveries").innerHTML = deliveries.map((d) => `
+                    <div class="flex flex-wrap gap-3 items-center border-b border-white/10 pb-2">
+                        <span class="flex-1">${d.display_name} (${d.name}) ${d.is_active ? "" : "(неактивна)"}</span>
+                        <button onclick="removeDelivery(${d.id})">Удалить</button>
+                    </div>
+                `).join("") || "<p class=\"opacity-70\">Нет служб доставки</p>";
+
+                document.getElementById("orders").innerHTML = orders.map((o) => {
+                    const date = o.created_at ? new Date(o.created_at).toLocaleString("ru-RU") : "";
+                    const statusOptions = ["new", "confirmed", "shipped", "cancelled"].map((s) =>
+                        `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`
+                    ).join("");
+                    return `<div class="glass-card rounded-xl p-4">
+                        <div class="flex flex-wrap gap-2 justify-between items-start mb-2">
+                            <span class="font-medium">#${o.id} · ${o.user_email}</span>
+                            <span class="text-xs opacity-50">${date}</span>
+                        </div>
+                        <p class="text-sm">Сумма: ${Math.round(o.total).toLocaleString("ru-RU")} р · Доставка: ${o.delivery_method} · Адрес: ${o.delivery_address}</p>
+                        <p class="text-sm opacity-70">Оплата: ${o.payment_type} · Статус: <span id="order-status-${o.id}">${o.status}</span></p>
+                        <div class="flex gap-2 mt-2">
+                            <select id="order-select-${o.id}" class="bg-black/30 border border-white/20 rounded-lg p-2 text-sm">${statusOptions}</select>
+                            <button onclick="updateOrderStatus(${o.id})" class="px-3 py-2 bg-brand-green rounded-lg text-sm">Обновить</button>
+                        </div>
+                    </div>`;
+                }).join("") || "<p class=\"opacity-70\">Нет заказов</p>";
+
+                loadAdminReviews(products);
+
                 bindAdminForms();
             } catch (error) {
                 document.getElementById("gate").classList.remove("hidden");
@@ -278,6 +353,38 @@
         async function removeQr(id) { await fetch(`/api/admin/qrs/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
         async function removeGallery(id) { await fetch(`/api/admin/gallery/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
         async function removeDoc(id) { await fetch(`/api/admin/documents/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function removePayment(id) { await fetch(`/api/admin/payment-methods/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function removeDelivery(id) { await fetch(`/api/admin/delivery/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function updateOrderStatus(id) {
+            const sel = document.getElementById("order-select-" + id);
+            const fd = new FormData();
+            fd.append("status", sel.value);
+            await fetch(`/api/admin/orders/${id}/status`, { method: "POST", headers: authHeaders(false), body: fd });
+            loadAdmin();
+        }
+        async function hideReview(id) { await fetch(`/api/admin/reviews/${id}`, { method: "DELETE", headers: authHeaders() }); loadAdmin(); }
+        async function loadAdminReviews(products) {
+            const box = document.getElementById("admin-reviews");
+            if (!box || !products.length) { box.innerHTML = "<p class=\"opacity-70\">Нет товаров</p>"; return; }
+            let html = "";
+            for (const p of products) {
+                try {
+                    const reviews = await adminGet(`/api/products/${p.id}/reviews`);
+                    if (reviews.length) {
+                        html += `<p class="text-sm font-medium mt-3 mb-1">${p.name}</p>`;
+                        html += reviews.map((r) => {
+                            const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+                            const date = r.created_at ? new Date(r.created_at).toLocaleDateString("ru-RU") : "";
+                            return `<div class="flex flex-wrap gap-3 items-center border-b border-white/10 pb-2 pl-2">
+                                <span class="flex-1">${r.user_email} · ${stars} · ${r.text} <span class="opacity-50">(${date})</span></span>
+                                <button onclick="hideReview(${r.id})">Скрыть</button>
+                            </div>`;
+                        }).join("");
+                    }
+                } catch (e) {}
+            }
+            box.innerHTML = html || "<p class=\"opacity-70\">Отзывов нет</p>";
+        }
 
         document.getElementById("product-form").addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -329,6 +436,39 @@
         document.getElementById("doc-form").addEventListener("submit", async (event) => {
             event.preventDefault();
             await fetch("/api/admin/documents", { method: "POST", headers: authHeaders(false), body: new FormData(event.target) });
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("payment-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const fd = new FormData(event.target);
+            await fetch("/api/admin/payment-methods", {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    name: fd.get("name"),
+                    client_type: fd.get("client_type"),
+                    details: fd.get("details") || "",
+                    is_active: fd.get("is_active") === "on",
+                    sort_order: 0
+                })
+            });
+            event.target.reset();
+            loadAdmin();
+        });
+        document.getElementById("delivery-form").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const fd = new FormData(event.target);
+            await fetch("/api/admin/delivery", {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    name: fd.get("name"),
+                    display_name: fd.get("display_name"),
+                    is_active: fd.get("is_active") === "on",
+                    sort_order: 0
+                })
+            });
             event.target.reset();
             loadAdmin();
         });

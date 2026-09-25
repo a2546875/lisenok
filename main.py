@@ -564,5 +564,10 @@ def support_page() -> FileResponse:
     return page("support.html")
 
 
+@app.get("/checkout")
+def checkout_page() -> FileResponse:
+    return page("checkout.html")
+
+
 if STATIC_DIR.exists():
     app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
